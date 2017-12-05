@@ -13,6 +13,8 @@ static const char XSDTextViewExtensionMaxLengthKey = '\0';
 
 static const char XSDTextViewExtensionDisEmojiKey = '\0';
 
+static NSString * const emojiPattern = @"[^\\u0020-\\u007E\\u00A0-\\u00BE\\u2E80-\\uA4CF\\uF900-\\uFAFF\\uFE30-\\uFE4F\\uFF00-\\uFFEF\\u0080-\\u009F\\u2000-\\u201f\r\n]";
+
 @implementation XSDTextViewExtension
 
 + (void)load {
@@ -41,7 +43,7 @@ static const char XSDTextViewExtensionDisEmojiKey = '\0';
 
 - (void)textDidChange:(NSNotification *)notification {
     UITextField *textField = notification.object;
-    if ([textField respondsToSelector:@selector(disEmoji)] && textField.disEmoji) {
+    if ([textField respondsToSelector:@selector(disEmoji)] && textField.disEmoji && [XSDTextViewExtension checkStrEmoji:textField.text]) {
         textField.text = [XSDTextViewExtension converStrEmoji:textField.text];
     }
     if ([textField respondsToSelector:@selector(disEmoji)] && textField.maxLength) {
@@ -66,10 +68,14 @@ static const char XSDTextViewExtensionDisEmojiKey = '\0';
     [[NSNotificationCenter defaultCenter] removeObserver:self];
 }
 
++ (BOOL)checkStrEmoji:(NSString *)str {
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:emojiPattern options:NSRegularExpressionCaseInsensitive error:nil];
+    return ([regex numberOfMatchesInString:str options:NSMatchingReportProgress range:NSMakeRange(0, str.length)] > 0);
+}
+
 + (NSString *)converStrEmoji:(NSString *)emojiStr {
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"[^\\u0020-\\u007E\\u00A0-\\u00BE\\u2E80-\\uA4CF\\uF900-\\uFAFF\\uFE30-\\uFE4F\\uFF00-\\uFFEF\\u0080-\\u009F\\u2000-\\u201f\r\n]" options:NSRegularExpressionCaseInsensitive error:nil];
-    NSString *modifiedString = [regex stringByReplacingMatchesInString:emojiStr options:0 range:NSMakeRange(0, [emojiStr length]) withTemplate:@""];
-    return modifiedString;
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:emojiPattern options:NSRegularExpressionCaseInsensitive error:nil];
+    return [regex stringByReplacingMatchesInString:emojiStr options:0 range:NSMakeRange(0, [emojiStr length]) withTemplate:@""];
 }
 
 @end
